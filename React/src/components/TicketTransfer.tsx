@@ -9,7 +9,7 @@ export default function TicketTransfer() {
 
   const handleTransfer = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!isConnected) {
       toast.error('Please connect your wallet first');
       return;
@@ -32,7 +32,9 @@ export default function TicketTransfer() {
     <div className="py-12 bg-gray-50" id="transfer">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="lg:text-center mb-12">
-          <h2 className="text-base text-purple-600 font-semibold tracking-wide uppercase">Transfer Ticket</h2>
+          <h2 className="text-base text-purple-600 font-semibold tracking-wide uppercase">
+            Transfer Ticket
+          </h2>
           <p className="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-gray-900 sm:text-4xl">
             Send Your Ticket to Someone Else
           </p>
@@ -41,7 +43,10 @@ export default function TicketTransfer() {
         <div className="max-w-md mx-auto">
           <form onSubmit={handleTransfer} className="space-y-6">
             <div>
-              <label htmlFor="ticketId" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="ticketId"
+                className="block text-sm font-medium text-gray-700"
+              >
                 Ticket ID
               </label>
               <input
@@ -55,7 +60,10 @@ export default function TicketTransfer() {
             </div>
 
             <div>
-              <label htmlFor="address" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="address"
+                className="block text-sm font-medium text-gray-700"
+              >
                 Recipient Address
               </label>
               <input

@@ -7,11 +7,11 @@ import { toast } from 'react-hot-toast';
 export default function EventDetails() {
   const { contract, isConnected } = useWeb3();
   const [eventDetails, setEventDetails] = useState({
-    name: '',
-    date: new Date(),
-    totalTickets: 0,
-    ticketsSold: 0,
-    ticketPrice: '0',
+    name: 'Summer Music Festival 2024',
+    date: new Date('2024-07-15'),
+    totalTickets: 1000,
+    ticketsSold: 450,
+    ticketPrice: '0.1',
   });
 
   useEffect(() => {
@@ -24,7 +24,7 @@ export default function EventDetails() {
     try {
       const [name, date, totalTickets, ticketsSold] = await contract!.getEventDetails();
       const price = await contract!.ticketPrice();
-      
+
       setEventDetails({
         name,
         date: new Date(Number(date) * 1000),
@@ -45,7 +45,7 @@ export default function EventDetails() {
 
     try {
       const tx = await contract!.buyTicket({
-        value: ethers.parseEther(eventDetails.ticketPrice)
+        value: ethers.parseEther(eventDetails.ticketPrice),
       });
       toast.loading('Purchasing ticket...');
       await tx.wait();
@@ -57,55 +57,60 @@ export default function EventDetails() {
     }
   };
 
+  const stats = [
+    {
+      icon: <Calendar className="h-6 w-6 text-purple-600" />,
+      label: 'Date',
+      value: eventDetails.date.toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric',
+      }),
+    },
+    {
+      icon: <Users className="h-6 w-6 text-purple-600" />,
+      label: 'Availability',
+      value: `${eventDetails.ticketsSold} / ${eventDetails.totalTickets}`,
+    },
+    {
+      icon: <Ticket className="h-6 w-6 text-purple-600" />,
+      label: 'Price',
+      value: `${eventDetails.ticketPrice} ETH`,
+    },
+  ];
+
   return (
-    <div className="py-12 bg-white" id="event-details">
+    <div className="py-24" id="event-details">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="lg:text-center mb-12">
-          <h2 className="text-base text-purple-600 font-semibold tracking-wide uppercase">Event Details</h2>
-          <p className="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-gray-900 sm:text-4xl">
+        <div className="text-center mb-16">
+          <h2 className="text-base text-purple-600 font-semibold tracking-wide uppercase">
+            Event Details
+          </h2>
+          <p className="mt-2 text-4xl font-bold text-gray-900">
             {eventDetails.name}
           </p>
         </div>
 
-        <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-          <div className="px-4 py-5 sm:p-6">
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-              <div className="flex items-center space-x-3">
-                <Calendar className="h-6 w-6 text-purple-600" />
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Date</p>
-                  <p className="mt-1 text-lg font-semibold text-gray-900">
-                    {eventDetails.date.toLocaleDateString()}
-                  </p>
+        <div className="glass-card rounded-2xl overflow-hidden">
+          <div className="p-8">
+            <div className="grid grid-cols-1 gap-8 sm:grid-cols-3">
+              {stats.map((stat, index) => (
+                <div key={index} className="flex items-center gap-4">
+                  <div className="flex-shrink-0 h-12 w-12 flex items-center justify-center rounded-xl bg-purple-100">
+                    {stat.icon}
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">{stat.label}</p>
+                    <p className="mt-1 text-xl font-semibold text-gray-900">
+                      {stat.value}
+                    </p>
+                  </div>
                 </div>
-              </div>
-
-              <div className="flex items-center space-x-3">
-                <Users className="h-6 w-6 text-purple-600" />
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Availability</p>
-                  <p className="mt-1 text-lg font-semibold text-gray-900">
-                    {eventDetails.ticketsSold} / {eventDetails.totalTickets}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-3">
-                <Ticket className="h-6 w-6 text-purple-600" />
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Price</p>
-                  <p className="mt-1 text-lg font-semibold text-gray-900">
-                    {eventDetails.ticketPrice} ETH
-                  </p>
-                </div>
-              </div>
+              ))}
             </div>
 
-            <div className="mt-8">
-              <button
-                onClick={buyTicket}
-                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
-              >
+            <div className="mt-10">
+              <button onClick={buyTicket} className="btn-primary w-full">
                 Buy Ticket
               </button>
             </div>

@@ -4,6 +4,7 @@ import { Web3Provider } from './context/Web3Context';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import Features from './components/Features';
+import CreateEvent from './components/CreateEvent';
 import EventDetails from './components/EventDetails';
 import TicketTransfer from './components/TicketTransfer';
 
@@ -15,6 +16,7 @@ function App() {
         <Navbar />
         <Hero />
         <Features />
+        <CreateEvent />
         <EventDetails />
         <TicketTransfer />
       </div>
