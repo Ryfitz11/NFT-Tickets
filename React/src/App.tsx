@@ -1,6 +1,6 @@
 import React from "react";
 import { Toaster } from "react-hot-toast";
-import { Web3Provider } from "./context/Web3Context";
+import { Web3Provider } from "../contract/context/Web3Context";
 import Navbar from "./components/Navbar";
 import Hero from "./components/Hero";
 import Features from "./components/Features";

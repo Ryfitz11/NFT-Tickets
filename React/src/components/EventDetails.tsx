@@ -1,28 +1,39 @@
-import { useState, useEffect } from 'react';
-import { useWeb3 } from '../context/Web3Context';
-import { ethers } from 'ethers';
-import { Calendar, Users, Ticket } from 'lucide-react';
-import { toast } from 'react-hot-toast';
+import React from "react";
+import { useState, useEffect } from "react";
+import { useWeb3 } from "../../contract/context/Web3Context";
+import { ethers } from "ethers";
+import { Calendar, Users, Ticket } from "lucide-react";
+import { toast } from "react-hot-toast";
 
 export default function EventDetails() {
   const { contract, isConnected } = useWeb3();
   const [eventDetails, setEventDetails] = useState({
-    name: 'Summer Music Festival 2024',
-    date: new Date('2024-07-15'),
+    name: "Summer Music Festival 2024",
+    date: new Date("2024-07-15"),
     totalTickets: 1000,
     ticketsSold: 450,
-    ticketPrice: '0.1',
+    ticketPrice: "0.1",
   });
 
   useEffect(() => {
     if (contract) {
       fetchEventDetails();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contract]);
+
+  useEffect(() => {
+    console.log("Web3 Context State:eventDetails", {
+      isConnected,
+      hasContract: !!contract,
+      contractAddress: contract?.address,
+    });
+  }, [contract, isConnected]);
 
   const fetchEventDetails = async () => {
     try {
-      const [name, date, totalTickets, ticketsSold] = await contract!.getEventDetails();
+      const [name, date, totalTickets, ticketsSold] =
+        await contract!.getEventDetails();
       const price = await contract!.ticketPrice();
 
       setEventDetails({
@@ -33,48 +44,56 @@ export default function EventDetails() {
         ticketPrice: ethers.formatEther(price),
       });
     } catch (error) {
-      console.error('Error fetching event details:', error);
+      console.error("Error fetching event details:", error);
     }
   };
 
   const buyTicket = async () => {
     if (!isConnected) {
-      toast.error('Please connect your wallet first');
+      toast.error("Please connect your wallet first");
+      return;
+    }
+
+    if (!contract) {
+      toast.error("Contract not initialized");
       return;
     }
 
     try {
-      const tx = await contract!.buyTicket({
+      const tx = await contract.buyTicket({
         value: ethers.parseEther(eventDetails.ticketPrice),
       });
-      toast.loading('Purchasing ticket...');
+      const loadingToast = toast.loading("Purchasing ticket...");
       await tx.wait();
-      toast.success('Ticket purchased successfully!');
+      toast.dismiss(loadingToast);
+      toast.success("Ticket purchased successfully!");
       fetchEventDetails();
-    } catch (error) {
-      toast.error('Failed to purchase ticket');
-      console.error(error);
+    } catch (error: Error | unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to purchase ticket";
+      toast.error(errorMessage);
+      console.error("Buy ticket error:", error);
     }
   };
 
   const stats = [
     {
       icon: <Calendar className="h-6 w-6 text-purple-600" />,
-      label: 'Date',
-      value: eventDetails.date.toLocaleDateString('en-US', {
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric',
+      label: "Date",
+      value: eventDetails.date.toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
       }),
     },
     {
       icon: <Users className="h-6 w-6 text-purple-600" />,
-      label: 'Availability',
+      label: "Availability",
       value: `${eventDetails.ticketsSold} / ${eventDetails.totalTickets}`,
     },
     {
       icon: <Ticket className="h-6 w-6 text-purple-600" />,
-      label: 'Price',
+      label: "Price",
       value: `${eventDetails.ticketPrice} ETH`,
     },
   ];

@@ -25,6 +25,13 @@
     "declaration": true,
     "emitDeclarationOnly": false
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "vite.config.ts"],
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "vite.config.ts",
+    "contract/context/Web3Context.tsx",
+    "../context/Web3Context.tsx",
+    "../context/web3ContextCore.ts"
+  ],
   "exclude": ["node_modules"]
 }

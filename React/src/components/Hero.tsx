@@ -1,5 +1,5 @@
-import { Wallet, Ticket, ArrowRight } from 'lucide-react';
-import { useWeb3 } from '../context/Web3Context';
+import { Wallet, Ticket, ArrowRight } from "lucide-react";
+import { useWeb3 } from "../../contract/context/Web3Context";
 
 export default function Hero() {
   const { connectWallet, account } = useWeb3();
@@ -15,21 +15,24 @@ export default function Hero() {
               Event Ticketing
             </span>
           </h1>
-          
+
           <p className="mt-6 text-xl text-gray-600 max-w-2xl mx-auto lg:mx-0">
-            Buy, sell, and collect unique NFT tickets for your favorite events. 
-            Secure, transparent, and unforgettable experiences powered by blockchain.
+            Buy, sell, and collect unique NFT tickets for your favorite events.
+            Secure, transparent, and unforgettable experiences powered by
+            blockchain.
           </p>
 
           <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-            <button 
+            <button
               onClick={connectWallet}
               className="btn-primary flex items-center justify-center gap-2"
             >
               <Wallet className="h-5 w-5" />
-              {account ? `${account.slice(0, 6)}...${account.slice(-4)}` : 'Connect Wallet'}
+              {account
+                ? `${account.slice(0, 6)}...${account.slice(-4)}`
+                : "Connect Wallet"}
             </button>
-            
+
             <button className="btn-primary flex items-center justify-center gap-2 !bg-white !from-transparent !to-transparent !text-purple-600 border border-purple-200">
               <Ticket className="h-5 w-5" />
               Browse Events
@@ -39,11 +42,14 @@ export default function Hero() {
 
           <div className="mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {[
-              'https://images.unsplash.com/photo-1514525253161-7a46d19cd819',
-              'https://images.unsplash.com/photo-1540575467063-178a50c2df87',
-              'https://images.unsplash.com/photo-1492684223066-81342ee5ff30'
+              "https://images.unsplash.com/photo-1514525253161-7a46d19cd819",
+              "https://images.unsplash.com/photo-1540575467063-178a50c2df87",
+              "https://images.unsplash.com/photo-1492684223066-81342ee5ff30",
             ].map((img, i) => (
-              <div key={i} className="group relative overflow-hidden rounded-2xl">
+              <div
+                key={i}
+                className="group relative overflow-hidden rounded-2xl"
+              >
                 <div className="absolute inset-0 bg-gradient-to-t from-purple-900/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 <img
                   src={`${img}?auto=format&fit=crop&w=800&q=80`}

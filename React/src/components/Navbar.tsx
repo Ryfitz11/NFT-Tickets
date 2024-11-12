@@ -1,15 +1,15 @@
-import React from 'react';
-import { Menu, X, Ticket } from 'lucide-react';
-import { useWeb3 } from '../context/Web3Context';
+import React from "react";
+import { Menu, X, Ticket } from "lucide-react";
+import { useWeb3 } from "../../contract/context/Web3Context";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = React.useState(false);
   const { connectWallet, account } = useWeb3();
 
   const navItems = [
-    { name: 'Events', href: '#events' },
-    { name: 'Marketplace', href: '#marketplace' },
-    { name: 'How it Works', href: '#how-it-works' },
+    { name: "Events", href: "#events" },
+    { name: "Marketplace", href: "#marketplace" },
+    { name: "How it Works", href: "#how-it-works" },
   ];
 
   return (
@@ -37,11 +37,10 @@ export default function Navbar() {
                     {item.name}
                   </a>
                 ))}
-                <button
-                  onClick={connectWallet}
-                  className="btn-primary"
-                >
-                  {account ? `${account.slice(0, 6)}...${account.slice(-4)}` : 'Connect Wallet'}
+                <button onClick={connectWallet} className="btn-primary">
+                  {account
+                    ? `${account.slice(0, 6)}...${account.slice(-4)}`
+                    : "Connect Wallet"}
                 </button>
               </div>
             </div>
@@ -51,7 +50,11 @@ export default function Navbar() {
                 onClick={() => setIsOpen(!isOpen)}
                 className="text-gray-600 hover:text-purple-600 transition-colors"
               >
-                {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+                {isOpen ? (
+                  <X className="h-6 w-6" />
+                ) : (
+                  <Menu className="h-6 w-6" />
+                )}
               </button>
             </div>
           </div>
@@ -73,7 +76,9 @@ export default function Navbar() {
                 onClick={connectWallet}
                 className="w-full btn-primary mt-4"
               >
-                {account ? `${account.slice(0, 6)}...${account.slice(-4)}` : 'Connect Wallet'}
+                {account
+                  ? `${account.slice(0, 6)}...${account.slice(-4)}`
+                  : "Connect Wallet"}
               </button>
             </div>
           </div>

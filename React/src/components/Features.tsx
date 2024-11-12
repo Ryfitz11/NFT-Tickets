@@ -1,30 +1,31 @@
-import { Shield, Repeat, Ticket, Coins } from 'lucide-react';
+import React from "react";
+import { Shield, Repeat, Ticket, Coins } from "lucide-react";
 
 export default function Features() {
   const features = [
     {
       icon: <Shield className="h-6 w-6 text-purple-600" />,
-      title: 'Secure & Authentic',
+      title: "Secure & Authentic",
       description:
-        'Each ticket is a unique NFT, impossible to counterfeit and easily verifiable on the blockchain.',
+        "Each ticket is a unique NFT, impossible to counterfeit and easily verifiable on the blockchain.",
     },
     {
       icon: <Repeat className="h-6 w-6 text-purple-600" />,
-      title: 'Easy Transfers',
+      title: "Easy Transfers",
       description:
-        'Transfer or resell your tickets securely through our marketplace with just a few clicks.',
+        "Transfer or resell your tickets securely through our marketplace with just a few clicks.",
     },
     {
       icon: <Ticket className="h-6 w-6 text-purple-600" />,
-      title: 'Collectible Memories',
+      title: "Collectible Memories",
       description:
-        'Keep your tickets as digital collectibles, complete with unique artwork and event memories.',
+        "Keep your tickets as digital collectibles, complete with unique artwork and event memories.",
     },
     {
       icon: <Coins className="h-6 w-6 text-purple-600" />,
-      title: 'Fair Pricing',
+      title: "Fair Pricing",
       description:
-        'Smart contracts ensure transparent pricing and eliminate scalping through controlled resale limits.',
+        "Smart contracts ensure transparent pricing and eliminate scalping through controlled resale limits.",
     },
   ];
 

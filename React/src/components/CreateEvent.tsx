@@ -1,29 +1,29 @@
-import React, { useState } from 'react';
-import { useWeb3 } from '../context/Web3Context';
-import { toast } from 'react-hot-toast';
-import { Calendar, Ticket, DollarSign } from 'lucide-react';
+import React, { useState } from "react";
+import { useWeb3 } from "../context/Web3Context";
+import { toast } from "react-hot-toast";
+import { Calendar, Ticket, DollarSign } from "lucide-react";
 
 export default function CreateEvent() {
   const { deployEventContract, isConnected } = useWeb3();
   const [formData, setFormData] = useState({
-    name: '',
-    date: '',
-    totalTickets: '',
-    ticketPrice: '',
+    name: "",
+    date: "",
+    totalTickets: "",
+    ticketPrice: "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!isConnected) {
-      toast.error('Please connect your wallet first');
+      toast.error("Please connect your wallet first");
       return;
     }
 
     try {
       const timestamp = Math.floor(new Date(formData.date).getTime() / 1000);
-      toast.loading('Deploying event contract...');
-      
+      toast.loading("Deploying event contract...");
+
       const eventAddress = await deployEventContract(
         formData.name,
         timestamp,
@@ -31,23 +31,26 @@ export default function CreateEvent() {
         formData.ticketPrice
       );
 
-      toast.success('Event contract deployed successfully!');
+      toast.success("Event contract deployed successfully!");
       toast.success(`Contract Address: ${eventAddress}`);
-      
+
       setFormData({
-        name: '',
-        date: '',
-        totalTickets: '',
-        ticketPrice: '',
+        name: "",
+        date: "",
+        totalTickets: "",
+        ticketPrice: "",
       });
     } catch (error) {
-      toast.error('Failed to deploy event contract');
+      toast.error("Failed to deploy event contract");
       console.error(error);
     }
   };
 
   return (
-    <div className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-purple-50 to-indigo-50" id="create-event">
+    <div
+      className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-purple-50 to-indigo-50"
+      id="create-event"
+    >
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-12">
           <h2 className="text-base text-purple-600 font-semibold tracking-wide uppercase">
@@ -115,7 +118,10 @@ export default function CreateEvent() {
                       type="number"
                       value={formData.totalTickets}
                       onChange={(e) =>
-                        setFormData({ ...formData, totalTickets: e.target.value })
+                        setFormData({
+                          ...formData,
+                          totalTickets: e.target.value,
+                        })
                       }
                       className="pl-10 block w-full border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
                       placeholder="Number of tickets"
@@ -137,7 +143,10 @@ export default function CreateEvent() {
                       type="number"
                       value={formData.ticketPrice}
                       onChange={(e) =>
-                        setFormData({ ...formData, ticketPrice: e.target.value })
+                        setFormData({
+                          ...formData,
+                          ticketPrice: e.target.value,
+                        })
                       }
                       className="pl-10 block w-full border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
                       placeholder="0.00"

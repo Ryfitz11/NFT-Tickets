@@ -1,29 +1,29 @@
-import React, { useState } from 'react';
-import { useWeb3 } from '../context/Web3Context';
-import { toast } from 'react-hot-toast';
+import React, { useState } from "react";
+import { useWeb3 } from "../../contract/context/Web3Context";
+import { toast } from "react-hot-toast";
 
 export default function TicketTransfer() {
   const { contract, isConnected } = useWeb3();
-  const [ticketId, setTicketId] = useState('');
-  const [recipientAddress, setRecipientAddress] = useState('');
+  const [ticketId, setTicketId] = useState("");
+  const [recipientAddress, setRecipientAddress] = useState("");
 
   const handleTransfer = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!isConnected) {
-      toast.error('Please connect your wallet first');
+      toast.error("Please connect your wallet first");
       return;
     }
 
     try {
       const tx = await contract!.transferTicket(ticketId, recipientAddress);
-      toast.loading('Transferring ticket...');
+      toast.loading("Transferring ticket...");
       await tx.wait();
-      toast.success('Ticket transferred successfully!');
-      setTicketId('');
-      setRecipientAddress('');
+      toast.success("Ticket transferred successfully!");
+      setTicketId("");
+      setRecipientAddress("");
     } catch (error) {
-      toast.error('Failed to transfer ticket');
+      toast.error("Failed to transfer ticket");
       console.error(error);
     }
   };
