@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useWeb3 } from "../../contract/context/Web3Context";
+import { useWeb3 } from "../context/Web3Context";
 import { toast } from "react-hot-toast";
 
 export default function TicketTransfer() {

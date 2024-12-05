@@ -1,6 +1,6 @@
 import React from "react";
 import { Menu, X, Ticket } from "lucide-react";
-import { useWeb3 } from "../../contract/context/Web3Context";
+import { useWeb3 } from "../context/Web3Context.tsx";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = React.useState(false);

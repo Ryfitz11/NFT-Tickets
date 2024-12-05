@@ -1,141 +1,105 @@
-import React from "react";
-import { useState, useEffect } from "react";
-import { useWeb3 } from "../../contract/context/Web3Context";
+import React, { useEffect, useState, useCallback } from "react";
+import toast from "react-hot-toast";
 import { ethers } from "ethers";
-import { Calendar, Users, Ticket } from "lucide-react";
-import { toast } from "react-hot-toast";
+import config from "../config.json";
+import EventTicketFactoryABI from "../contract/EventTicketFactory.json";
+import EventTicketABI from "../contract/EventTicket.json";
 
-export default function EventDetails() {
-  const { contract, isConnected } = useWeb3();
-  const [eventDetails, setEventDetails] = useState({
-    name: "Summer Music Festival 2024",
-    date: new Date("2024-07-15"),
-    totalTickets: 1000,
-    ticketsSold: 450,
-    ticketPrice: "0.1",
-  });
+interface EventDetailsProps {
+  eventAddress: string;
+}
 
-  useEffect(() => {
-    if (contract) {
-      fetchEventDetails();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [contract]);
+export default function EventDetails({ eventAddress }: EventDetailsProps) {
+  const [eventContract, setEventContract] = useState<ethers.Contract | null>(
+    null
+  );
+  const [eventDetails, setEventDetails] = useState<{
+    name: string;
+    date: Date;
+    totalTickets: number;
+    ticketsSold: number;
+    ticketPrice: string;
+  } | null>(null);
 
-  useEffect(() => {
-    console.log("Web3 Context State:eventDetails", {
-      isConnected,
-      hasContract: !!contract,
-      contractAddress: contract?.address,
-    });
-  }, [contract, isConnected]);
-
-  const fetchEventDetails = async () => {
+  // Setup factory contract
+  const setupContracts = useCallback(async () => {
     try {
-      const [name, date, totalTickets, ticketsSold] =
-        await contract!.getEventDetails();
-      const price = await contract!.ticketPrice();
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner();
+
+      // Setup specific event contract using the provided address
+      if (eventAddress) {
+        const event = new ethers.Contract(eventAddress, EventTicketABI, signer);
+        setEventContract(event);
+      }
+    } catch (error) {
+      console.error("Error setting up contracts:", error);
+    }
+  }, [eventAddress]);
+
+  const fetchEventDetails = useCallback(async () => {
+    try {
+      if (!eventContract) return;
+
+      // Get event details from the contract
+      const details = await eventContract.getEventDetails();
+      const price = await eventContract.ticketPrice();
 
       setEventDetails({
-        name,
-        date: new Date(Number(date) * 1000),
-        totalTickets: Number(totalTickets),
-        ticketsSold: Number(ticketsSold),
-        ticketPrice: ethers.formatEther(price),
+        name: details[0],
+        date: new Date(Number(details[1]) * 1000),
+        totalTickets: Number(details[2]),
+        ticketsSold: Number(details[3]),
+        ticketPrice: ethers.utils.formatEther(price),
       });
     } catch (error) {
       console.error("Error fetching event details:", error);
     }
-  };
+  }, [eventContract]);
 
   const buyTicket = async () => {
-    if (!isConnected) {
-      toast.error("Please connect your wallet first");
-      return;
-    }
-
-    if (!contract) {
-      toast.error("Contract not initialized");
-      return;
-    }
+    if (!eventContract || !eventDetails) return;
 
     try {
-      const tx = await contract.buyTicket({
-        value: ethers.parseEther(eventDetails.ticketPrice),
+      const tx = await eventContract.buyTicket({
+        value: ethers.utils.parseEther(eventDetails.ticketPrice),
       });
+
       const loadingToast = toast.loading("Purchasing ticket...");
-      await tx.wait();
-      toast.dismiss(loadingToast);
-      toast.success("Ticket purchased successfully!");
-      fetchEventDetails();
-    } catch (error: Error | unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to purchase ticket";
+
+      try {
+        await tx.wait();
+        toast.dismiss(loadingToast);
+        toast.success("Ticket purchased successfully!");
+        await fetchEventDetails(); // Refresh event details
+      } catch (error) {
+        toast.dismiss(loadingToast);
+        throw error;
+      }
+    } catch (error: any) {
+      let errorMessage = "Failed to purchase ticket";
+
+      if (error.code === "INSUFFICIENT_FUNDS") {
+        errorMessage = "Insufficient funds to purchase ticket";
+      } else if (error.reason) {
+        errorMessage = error.reason;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
       toast.error(errorMessage);
-      console.error("Buy ticket error:", error);
     }
   };
 
-  const stats = [
-    {
-      icon: <Calendar className="h-6 w-6 text-purple-600" />,
-      label: "Date",
-      value: eventDetails.date.toLocaleDateString("en-US", {
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-      }),
-    },
-    {
-      icon: <Users className="h-6 w-6 text-purple-600" />,
-      label: "Availability",
-      value: `${eventDetails.ticketsSold} / ${eventDetails.totalTickets}`,
-    },
-    {
-      icon: <Ticket className="h-6 w-6 text-purple-600" />,
-      label: "Price",
-      value: `${eventDetails.ticketPrice} ETH`,
-    },
-  ];
+  useEffect(() => {
+    setupContracts();
+    fetchEventDetails();
+  }, [eventAddress, setupContracts, fetchEventDetails, eventContract]);
 
   return (
-    <div className="py-24" id="event-details">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
-          <h2 className="text-base text-purple-600 font-semibold tracking-wide uppercase">
-            Event Details
-          </h2>
-          <p className="mt-2 text-4xl font-bold text-gray-900">
-            {eventDetails.name}
-          </p>
-        </div>
-
-        <div className="glass-card rounded-2xl overflow-hidden">
-          <div className="p-8">
-            <div className="grid grid-cols-1 gap-8 sm:grid-cols-3">
-              {stats.map((stat, index) => (
-                <div key={index} className="flex items-center gap-4">
-                  <div className="flex-shrink-0 h-12 w-12 flex items-center justify-center rounded-xl bg-purple-100">
-                    {stat.icon}
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">{stat.label}</p>
-                    <p className="mt-1 text-xl font-semibold text-gray-900">
-                      {stat.value}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-10">
-              <button onClick={buyTicket} className="btn-primary w-full">
-                Buy Ticket
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div>
+      {/* Render your event details components here */}
+      <button onClick={buyTicket}>Buy Ticket</button>
     </div>
   );
 }

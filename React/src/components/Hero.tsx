@@ -1,5 +1,5 @@
 import { Wallet, Ticket, ArrowRight } from "lucide-react";
-import { useWeb3 } from "../../contract/context/Web3Context";
+import { useWeb3 } from "../context/Web3Context";
 
 export default function Hero() {
   const { connectWallet, account } = useWeb3();

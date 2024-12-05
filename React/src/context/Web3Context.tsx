@@ -27,6 +27,7 @@ export interface Web3ContextType {
   loadEventContract: (address: string) => Promise<void>;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const Web3Context = createContext<Web3ContextType | undefined>(
   undefined
 );
@@ -85,8 +86,13 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
       }
 
       toast.success("Wallet connected successfully!");
-    } catch (error: any) {
-      if (error?.code === 4001) {
+    } catch (error: unknown) {
+      if (
+        typeof error === "object" &&
+        error !== null &&
+        "code" in error &&
+        error.code === 4001
+      ) {
         toast.error("Please approve the connection request");
       } else {
         toast.error("Failed to connect wallet");
@@ -113,14 +119,12 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
     );
 
     const receipt = await tx.wait();
-    const deployEvent = receipt.logs.find(
-      (log) =>
-        factoryContract.interface.parseLog(log)?.name ===
-        "EventContractDeployed"
-    );
+    const deployEvent = receipt.logs.find((log: ethers.Log) => {
+      const parsedLog = factoryContract.interface.parseLog(log);
+      return parsedLog?.name === "EventContractDeployed";
+    });
 
     if (!deployEvent) throw new Error("Event contract address not found");
-
     const eventAddress = deployEvent.args[0];
     await loadEventContract(eventAddress);
     return eventAddress;
@@ -130,7 +134,15 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
     if (!provider) throw new Error("Provider not initialized");
     const signer = await provider.getSigner();
     const eventContract = new ethers.Contract(address, EventTicket.abi, signer);
-    setContract(eventContract);
+
+    // Verify the contract is deployed at this address
+    try {
+      await eventContract.getEventDetails(); // Test call to verify contract
+      setContract(eventContract);
+    } catch (error) {
+      console.error("Error loading contract:", error);
+      throw new Error("Invalid contract address or contract not deployed");
+    }
   };
 
   React.useEffect(() => {
