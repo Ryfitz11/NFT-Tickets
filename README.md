@@ -6,70 +6,90 @@ Welcome to the **NFT Ticketing Platform**! This decentralized platform allows ve
 
 - **Create Events**: Venue owners can create events with details such as event name, date, and ticket price.
 - **Sell Tickets**: Event tickets are tokenized as NFTs, making them unique, secure, and verifiable.
-- **Buy Tickets**: Users can purchase event tickets directly through the platform, with payments processed via Ethereum or other supported networks.
-- **Withdraw Funds**: Event organizers (owners) can withdraw funds from the contract after the event has taken place.
+- **Buy Tickets**: Users can purchase event tickets directly through the platform, with payments processed via blockchain.
+- **Cancel Event**: Event creators can cancel an event before its date, automatically refunding all ticket purchasers.
+- **Withdraw Funds**: Event organizers can withdraw proceeds from ticket sales after the event has taken place.
 
 ## Network Deployment
 
-- **Blockchain Network**: Base Network (Layer 2 solution for Ethereum)
-- **Network Details**:
-  - **Mainnet RPC URL**: [https://base-mainnet.infura.io], chainID: 8453
-  - **Testnet**: [https://sepolia.base.org], chainID: 84532
+This platform is currently deployed to **Base Sepolia** (an Ethereum Layer 2 testnet).
 
-The platform has been deployed on **Base** (an Ethereum Layer 2 network) to ensure fast and cost-effective transactions for ticket purchases and withdrawals.
+| Network      | RPC URL                  | Chain ID |
+| ------------ | ------------------------ | -------- |
+| Base Sepolia | https://sepolia.base.org | 84532    |
 
 ## Demo Video
 
-Check out the demo video on how to use the platform:  
-[Watch the Demo on YouTube](https://www.youtube.com/watch?v=fVsiR9CxX-4)
+Watch the demo on [YouTube](https://www.youtube.com/watch?v=fVsiR9CxX-4)
 
 ## How to Use the Platform
 
 ### 1. Connect Wallet
 
-To interact with the platform, connect your **MetaMask** wallet.
+- Install **MetaMask** and connect to **Base Sepolia** network.
 
-- Ensure you are connected to the **Base Network** (either mainnet or testnet, depending on your preference).
+### 2. Create an Event
 
-### 2. Creating an Event
+1. Navigate to **Create Event**.
+2. Fill in:
+   - **Event Name** (e.g., "Live Music!")
+   - **Contract Name** (required for ERC721)
+   - **Symbol** (required for ERC721)
+   - **Event Date** (UNIX timestamp)
+   - **Total Tickets** (Maximum tickets sold)
+   - **Ticket Limit** (Minimize scalping)
+   - **Ticket Price** (in ETH)
+3. Submit to deploy an `EventTicket` contract.
 
-- **Step 1**: As a venue owner, navigate to the "Create Event" page.
-- **Step 2**: Enter event details such as:
-  - **Event Name** (e.g., "Music Concert")
-  - **Event Date** (timestamp for the event)
-  - **Total Tickets** (number of tickets available for sale)
-  - **Ticket Price** (price per ticket in ETH or USDC)
-- **Step 3**: Submit the event to deploy the **EventTicket** contract.
+### 3. Purchase Tickets
 
-### 3. Purchasing Tickets
+1. Browse available events.
+2. Select an event.
+3. Approve transaction in MetaMask to buy a ticket. Your NFT ticket will appear in your wallet.
 
-- **Step 1**: Browse available events.
-- **Step 2**: Select the event you wish to attend.
-- **Step 3**: Connect your wallet and purchase a ticket. The payment will be processed through the blockchain, and you will receive a unique NFT ticket in your wallet.
+### 4. Cancel Event
 
-### 4. Withdrawing Funds (Event Owners)
+1. Navigate to **My Events**.
+2. Select the event you wish to cancel (before the event date).
+3. Confirm cancellation. All ticket purchasers will be able to recieve a refund in the app.
 
-- **Step 1**: After the event takes place, navigate to the "My Events" section.
-- **Step 2**: As the event organizer, you can withdraw the proceeds from the ticket sales to your connected wallet.
+### 5. Withdraw Funds (Event Organizers)
 
-## Installation and Setup (For Developers)
+1. After the event date, navigate to **My Events**.
+2. Click **Withdraw** to transfer funds to your wallet.
+
+## Features Coming Soon
+
+- **USDC Stablecoin Support**: Pay and receive refunds in USDC.
+- **IPFS Metadata Storage**: Decentralized storage for ticket metadata.
+- **Mobile Optimization**: Improved UI/UX for mobile devices.
+
+## Installation and Setup
 
 ### Prerequisites
 
-- Node.js (v16 or higher)
+- Node.js (v16+)
 - npm
 - MetaMask
-- Base Network RPC URL (for testing and deployment)
+- **Base Sepolia** RPC URL
 
-### Steps to Set Up Locally
+### Local Setup
 
-1. Clone the repository:
-
-   ```bash
-   git clone https://github.com/Ryfitz11/NFT-Tickets.git
-   cd NFT-Tickets
-
-    Install dependencies:
-   ```
-
+```bash
+git clone https://github.com/Ryfitz11/NFT-Tickets.git
+cd NFT-Tickets
 npm install
+```
+
+1. Copy `.env.example` to `.env` and update it with your Supabase credentials:
+
+```env
+VITE_SUPABASE_URL=<YOUR_SUPABASE_URL>
+VITE_SUPABASE_ANON_KEY=<YOUR_SUPABASE_ANON_KEY>
+```
+
+2. Run the app:
+
+```bash
+npm start
+```
