@@ -20,7 +20,7 @@ This platform is currently deployed to **Base Sepolia** (an Ethereum Layer 2 tes
 
 ## Demo Video
 
-Watch the demo on [YouTube](https://www.youtube.com/watch?v=fVsiR9CxX-4)
+Watch the demo on [YouTube](https://youtu.be/C047T_j_to4?si=hmLvtVrrCBtwTFxD)
 
 ## How to Use the Platform
 
