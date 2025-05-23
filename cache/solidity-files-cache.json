@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "/Users/ryanfitzgerald/source/dappUni/NFT-Tickets/contracts/EventTicket.sol": {
-      "lastModificationDate": 1747714975983,
-      "contentHash": "0e9e7fedbfa7a8d9f9e3700031b74865",
+      "lastModificationDate": 1747849449476,
+      "contentHash": "cbc2e32a6606e852e44b98f3b5e8f2b0",
       "sourceName": "contracts/EventTicket.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -31,7 +31,9 @@
       },
       "imports": [
         "@openzeppelin/contracts/token/ERC721/ERC721.sol",
-        "@openzeppelin/contracts/access/Ownable.sol"
+        "@openzeppelin/contracts/access/Ownable.sol",
+        "@openzeppelin/contracts/token/ERC20/IERC20.sol",
+        "@openzeppelin/contracts/utils/Strings.sol"
       ],
       "versionPragmas": [
         "^0.8.20"
@@ -611,8 +613,8 @@
       ]
     },
     "/Users/ryanfitzgerald/source/dappUni/NFT-Tickets/contracts/EventTicketFactory.sol": {
-      "lastModificationDate": 1747714858252,
-      "contentHash": "11e412544ef591964f9db91ea8d4a83b",
+      "lastModificationDate": 1747849330277,
+      "contentHash": "d80b5cb8afb67fd55076f6a056d355bc",
       "sourceName": "contracts/EventTicketFactory.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -646,6 +648,42 @@
       ],
       "artifacts": [
         "EventTicketFactory"
+      ]
+    },
+    "/Users/ryanfitzgerald/source/dappUni/NFT-Tickets/node_modules/@openzeppelin/contracts/token/ERC20/IERC20.sol": {
+      "lastModificationDate": 1747714966174,
+      "contentHash": "8f19f64d2adadf448840908bbaf431c8",
+      "sourceName": "@openzeppelin/contracts/token/ERC20/IERC20.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "evmVersion": "paris",
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "IERC20"
       ]
     }
   }
