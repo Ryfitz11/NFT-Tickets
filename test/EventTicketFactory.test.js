@@ -5,7 +5,7 @@ const { time } = require("@nomicfoundation/hardhat-network-helpers");
 describe("EventTicketFactory Contract Tests", function () {
   let EventTicketFactory, eventTicketFactory;
   let MockUSDC, mockUSDC;
-  let owner, creator, buyer; // Renamed anotherAccount to buyer
+  let owner, creator, buyer, thirdAccount; // Added thirdAccount
   let mockUSDCAddress;
 
   // Consistent test data
@@ -21,7 +21,7 @@ describe("EventTicketFactory Contract Tests", function () {
   const validBaseMetadataURI = "ipfs://QmValidFactoryBaseURI/";
 
   beforeEach(async function () {
-    [owner, creator, buyer] = await ethers.getSigners(); // Use buyer
+    [owner, creator, buyer, thirdAccount] = await ethers.getSigners(); // Use buyer and thirdAccount
 
     // Deploy MockUSDC
     MockUSDC = await ethers.getContractFactory("MockUSDC");
@@ -301,7 +301,7 @@ describe("EventTicketFactory Contract Tests", function () {
 
       const futureDate2 = validEventDateTimestamp + 3600;
       const tx2 = await eventTicketFactory
-        .connect(anotherAccount)
+        .connect(buyer) // Changed anotherAccount to buyer
         .createEvent(
           "Event Two",
           "E2",
@@ -461,35 +461,87 @@ describe("EventTicketFactory Contract Tests", function () {
   });
 
   describe("EventTicket: buyTicket Function", function () {
-    // beforeEach for buyTicket tests will use the deployedEventTicket from the parent describe block.
+    let buyTestEventTicket_Instance;
+    let buyTestEventTicket_Address;
+    let buyTest_EventDateTimestamp; // Specific for this event instance
+
+    beforeEach(async function () {
+      // Create a new event specifically for these "buyTicket" tests
+      buyTest_EventDateTimestamp = (await time.latest()) + 3600 * 24 * 5; // 5 days from now, local to this describe
+      const tx = await eventTicketFactory
+        .connect(creator)
+        .createEvent(
+          "Buy Test Event",
+          "BTE",
+          "Show For Buying Tickets",
+          buyTest_EventDateTimestamp,
+          validTotalTickets,
+          validTicketPriceInUSDC,
+          validTicketLimitPerBuyer,
+          mockUSDCAddress,
+          "ipfs://buytestevent"
+        );
+      const receipt = await tx.wait();
+      const eventCreatedFragment =
+        eventTicketFactory.interface.getEvent("EventCreated");
+      const factoryAddr = await eventTicketFactory.getAddress();
+      for (const log of receipt.logs) {
+        if (
+          log.topics[0] === eventCreatedFragment.topicHash &&
+          log.address === factoryAddr
+        ) {
+          buyTestEventTicket_Address =
+            eventTicketFactory.interface.parseLog(log).args
+              .buyTestEventTicket_Address;
+          break;
+        }
+      }
+      const EventTicket = await ethers.getContractFactory("EventTicket");
+      buyTestEventTicket_Instance = EventTicket.attach(
+        buyTestEventTicket_Address
+      );
+
+      // Ensure buyer has USDC. The parent beforeEach for "EventTicket Contract Interactions"
+      // already mints 1000 USDC to buyer. If specific amounts are needed for buyTicket tests, mint here.
+      // For example, if tests drain buyer's balance:
+      await mockUSDC
+        .connect(owner)
+        .mint(buyer.address, ethers.parseUnits("1000", usdcDecimals));
+    });
+
+    // Original comment to be removed or adapted:
+    // // beforeEach for buyTicket tests will use the buyTestEventTicket_Instance from the parent describe block.
+    // // Buyer already has USDC from the parent beforeEach.
+    // beforeEach for buyTicket tests will use the buyTestEventTicket_Instance from the parent describe block.
     // Buyer already has USDC from the parent beforeEach.
 
     it("Should allow a user to buy a ticket successfully", async function () {
       // Buyer approves the EventTicket contract to spend USDC
       await mockUSDC
         .connect(buyer)
-        .approve(eventContractAddress, validTicketPriceInUSDC);
+        .approve(buyTestEventTicket_Address, validTicketPriceInUSDC);
 
-      const initialTicketsSold = (await deployedEventTicket.getEventDetails())
-        .soldEventTickets;
-      const initialBuyerBalance = await deployedEventTicket.balanceOf(
+      const initialTicketsSold = (
+        await buyTestEventTicket_Instance.getEventDetails()
+      ).soldEventTickets;
+      const initialBuyerBalance = await buyTestEventTicket_Instance.balanceOf(
         buyer.address
       );
       const initialTicketsBoughtByBuyer =
-        await deployedEventTicket.ticketsBought(buyer.address);
+        await buyTestEventTicket_Instance.ticketsBought(buyer.address);
 
-      await expect(deployedEventTicket.connect(buyer).buyTicket()).to.not.be
-        .reverted;
+      await expect(buyTestEventTicket_Instance.connect(buyer).buyTicket()).to
+        .not.be.reverted;
 
-      const finalTicketsSold = (await deployedEventTicket.getEventDetails())
-        .soldEventTickets;
-      const finalBuyerBalance = await deployedEventTicket.balanceOf(
+      const finalTicketsSold = (
+        await buyTestEventTicket_Instance.getEventDetails()
+      ).soldEventTickets;
+      const finalBuyerBalance = await buyTestEventTicket_Instance.balanceOf(
         buyer.address
       );
-      const finalTicketsBoughtByBuyer = await deployedEventTicket.ticketsBought(
-        buyer.address
-      );
-      const nextTicketId = await deployedEventTicket.nextTicketId(); // nextTicketId is 0-indexed before mint
+      const finalTicketsBoughtByBuyer =
+        await buyTestEventTicket_Instance.ticketsBought(buyer.address);
+      const nextTicketId = await buyTestEventTicket_Instance.nextTicketId(); // nextTicketId is 0-indexed before mint
 
       expect(finalTicketsSold).to.equal(initialTicketsSold + BigInt(1));
       expect(finalBuyerBalance).to.equal(initialBuyerBalance + BigInt(1));
@@ -497,7 +549,7 @@ describe("EventTicketFactory Contract Tests", function () {
         initialTicketsBoughtByBuyer + BigInt(1)
       );
       expect(
-        await deployedEventTicket.ownerOf(nextTicketId - BigInt(1))
+        await buyTestEventTicket_Instance.ownerOf(nextTicketId - BigInt(1))
       ).to.equal(
         // Ticket ID is nextTicketId - 1
         buyer.address
@@ -505,23 +557,23 @@ describe("EventTicketFactory Contract Tests", function () {
     });
 
     it("Should REVERT if event is canceled", async function () {
-      await deployedEventTicket.connect(creator).cancelEvent();
+      await buyTestEventTicket_Instance.connect(creator).cancelEvent();
       await mockUSDC
         .connect(buyer)
-        .approve(eventContractAddress, validTicketPriceInUSDC);
+        .approve(buyTestEventTicket_Address, validTicketPriceInUSDC);
       await expect(
-        deployedEventTicket.connect(buyer).buyTicket()
+        buyTestEventTicket_Instance.connect(buyer).buyTicket()
       ).to.be.revertedWith("Event has been canceled");
     });
 
     it("Should REVERT if event has already occurred", async function () {
       // Fast forward time to after the event
-      await time.increaseTo(validEventDateTimestamp + 1);
+      await time.increaseTo(buyTest_EventDateTimestamp + 1);
       await mockUSDC
         .connect(buyer)
-        .approve(eventContractAddress, validTicketPriceInUSDC);
+        .approve(buyTestEventTicket_Address, validTicketPriceInUSDC);
       await expect(
-        deployedEventTicket.connect(buyer).buyTicket()
+        buyTestEventTicket_Instance.connect(buyer).buyTicket()
       ).to.be.revertedWith("Event has already occurred");
     });
 
@@ -554,7 +606,7 @@ describe("EventTicketFactory Contract Tests", function () {
         ) {
           singleTicketEventAddress =
             eventTicketFactory.interface.parseLog(log).args
-              .eventContractAddress;
+              .buyTestEventTicket_Address;
           break;
         }
       }
@@ -570,7 +622,7 @@ describe("EventTicketFactory Contract Tests", function () {
       await singleTicketDeployedEvent.connect(buyer).buyTicket();
 
       // Attempt to buy another ticket (should fail)
-      const anotherBuyer = owner; // Using owner as another buyer for simplicity
+      const anotherBuyer = thirdAccount; // Use thirdAccount for a distinct buyer
       await mockUSDC
         .connect(owner)
         .mint(anotherBuyer.address, validTicketPriceInUSDC); // Mint USDC to anotherBuyer
@@ -585,28 +637,31 @@ describe("EventTicketFactory Contract Tests", function () {
     it("Should REVERT if msg.value is not 0 (ETH sent)", async function () {
       await mockUSDC
         .connect(buyer)
-        .approve(eventContractAddress, validTicketPriceInUSDC);
+        .approve(buyTestEventTicket_Address, validTicketPriceInUSDC);
       await expect(
-        deployedEventTicket
+        buyTestEventTicket_Instance
           .connect(buyer)
           .buyTicket({ value: ethers.parseEther("0.1") })
       ).to.be.revertedWith("ETH not accepted; pay with USDC.");
     });
 
     it("Should REVERT if ticket purchase limit is reached for the buyer", async function () {
-      // Set ticket limit to 1 for this test on the main deployedEventTicket
-      await deployedEventTicket.connect(creator).setTicketLimit(1);
+      // Set ticket limit to 1 for this test on the main buyTestEventTicket_Instance
+      await buyTestEventTicket_Instance.connect(creator).setTicketLimit(1);
 
       await mockUSDC
         .connect(buyer)
-        .approve(eventContractAddress, validTicketPriceInUSDC * BigInt(2)); // Approve for 2 tickets
+        .approve(
+          buyTestEventTicket_Address,
+          validTicketPriceInUSDC * BigInt(2)
+        ); // Approve for 2 tickets
 
       // Buy first ticket (should succeed)
-      await deployedEventTicket.connect(buyer).buyTicket();
+      await buyTestEventTicket_Instance.connect(buyer).buyTicket();
 
       // Attempt to buy second ticket (should fail)
       await expect(
-        deployedEventTicket.connect(buyer).buyTicket()
+        buyTestEventTicket_Instance.connect(buyer).buyTicket()
       ).to.be.revertedWith("Ticket purchase limit reached");
     });
 
@@ -614,9 +669,12 @@ describe("EventTicketFactory Contract Tests", function () {
       // Buyer approves for less than the ticket price
       await mockUSDC
         .connect(buyer)
-        .approve(eventContractAddress, validTicketPriceInUSDC - BigInt(1));
+        .approve(
+          buyTestEventTicket_Address,
+          validTicketPriceInUSDC - BigInt(1)
+        );
       await expect(
-        deployedEventTicket.connect(buyer).buyTicket()
+        buyTestEventTicket_Instance.connect(buyer).buyTicket()
       ).to.be.revertedWith(
         "USDC allowance is insufficient. Please approve the contract to spend USDC."
       );
@@ -626,14 +684,14 @@ describe("EventTicketFactory Contract Tests", function () {
       // Buyer approves correctly
       await mockUSDC
         .connect(buyer)
-        .approve(eventContractAddress, validTicketPriceInUSDC);
+        .approve(buyTestEventTicket_Address, validTicketPriceInUSDC);
 
       // Simulate buyer having insufficient balance after approval (e.g., by transferring their USDC away)
       const buyerUSDCBalance = await mockUSDC.balanceOf(buyer.address);
       await mockUSDC.connect(buyer).transfer(owner.address, buyerUSDCBalance); // Buyer sends all their USDC to owner
 
       await expect(
-        deployedEventTicket.connect(buyer).buyTicket()
+        buyTestEventTicket_Instance.connect(buyer).buyTicket()
       ).to.be.revertedWith(
         // This will likely be caught by the allowance check if balance is 0,
         // or by transferFrom's internal checks if balance < price.
@@ -652,131 +710,92 @@ describe("EventTicketFactory Contract Tests", function () {
   });
 
   describe("EventTicket: cancelEvent Function", function () {
+    let cancelTestEventTicket_Instance;
+    let cancelTestEventTicket_Address;
+    let cancelTest_EventDateTimestamp;
+
+    beforeEach(async function () {
+      // Create a new event specifically for these "cancelEvent" tests
+      cancelTest_EventDateTimestamp = (await time.latest()) + 3600 * 24 * 3; // 3 days from now
+      const tx = await eventTicketFactory.connect(creator).createEvent(
+        "Cancel Test Event",
+        "CTE",
+        "Cancellable Show",
+        cancelTest_EventDateTimestamp,
+        10, // totalTickets
+        validTicketPriceInUSDC, // ticketPrice
+        5, // ticketLimit
+        mockUSDCAddress,
+        "ipfs://canceltestevent"
+      );
+      const receipt = await tx.wait();
+      const eventCreatedFragment =
+        eventTicketFactory.interface.getEvent("EventCreated");
+      const factoryAddr = await eventTicketFactory.getAddress();
+      for (const log of receipt.logs) {
+        if (
+          log.topics[0] === eventCreatedFragment.topicHash &&
+          log.address === factoryAddr
+        ) {
+          cancelTestEventTicket_Address =
+            eventTicketFactory.interface.parseLog(log).args
+              .eventContractAddress;
+          break;
+        }
+      }
+      const EventTicket = await ethers.getContractFactory("EventTicket");
+      cancelTestEventTicket_Instance = EventTicket.attach(
+        cancelTestEventTicket_Address
+      );
+    });
     it("Should allow the owner to cancel an event successfully", async function () {
-      const initialDetails = await deployedEventTicket.getEventDetails();
+      const initialDetails =
+        await cancelTestEventTicket_Instance.getEventDetails();
       expect(initialDetails.isEventCanceled).to.be.false;
 
-      // Ensure the event is not in the past before cancelling
-      // For safety, if validEventDateTimestamp is somehow in the past due to test execution order or long tests,
-      // we'll quickly create a fresh event for this specific test case.
-      // This makes the test more robust against state leakage from other tests.
-      let currentEventTicketInstance = deployedEventTicket;
-      let currentEventDate = validEventDateTimestamp;
+      // The beforeEach for this describe block (cancelEvent) creates cancelTestEventTicket_Instance.
+      // We will use that directly. The logic for creating "fresh" events inside this 'it' block is removed.
 
-      if ((await time.latest()) >= currentEventDate) {
-        const newEventDate = (await time.latest()) + 3600 * 24; // 1 day from now
-        const tx = await eventTicketFactory
-          .connect(creator)
-          .createEvent(
-            "Cancel Test Event Fresh",
-            "CTEF",
-            "Cancellable Show Fresh",
-            newEventDate,
-            10,
-            validTicketPriceInUSDC,
-            1,
-            mockUSDCAddress,
-            "ipfs://cancelfresh"
-          );
-        const receipt = await tx.wait();
-        const eventCreatedFragment =
-          eventTicketFactory.interface.getEvent("EventCreated");
-        const factoryAddr = await eventTicketFactory.getAddress();
-        let freshEventAddress;
-        for (const log of receipt.logs) {
-          if (
-            log.topics[0] === eventCreatedFragment.topicHash &&
-            log.address === factoryAddr
-          ) {
-            freshEventAddress =
-              eventTicketFactory.interface.parseLog(log).args
-                .eventContractAddress;
-            break;
-          }
-        }
-        const EventTicket = await ethers.getContractFactory("EventTicket");
-        currentEventTicketInstance = EventTicket.attach(freshEventAddress);
-        // Note: validEventDateTimestamp is not updated globally, only currentEventDate for this test scope
-      }
-
-      const tx = await currentEventTicketInstance
+      const cancelTx = await cancelTestEventTicket_Instance
         .connect(creator)
         .cancelEvent();
-      const receipt = await tx.wait();
-      // Solidity's block.timestamp is the timestamp of the block where the tx is included.
-      // For local Hardhat network, time.latest() before the transaction is a close approximation.
-      // For more precise checking, you'd get the block of the transaction receipt.
+      const cancelReceipt = await cancelTx.wait();
       const blockTimestamp = (
-        await ethers.provider.getBlock(receipt.blockNumber)
+        await ethers.provider.getBlock(cancelReceipt.blockNumber)
       ).timestamp;
 
-      await expect(tx)
-        .to.emit(currentEventTicketInstance, "EventCanceled")
-        .withArgs(blockTimestamp); // Check against the actual block timestamp
+      await expect(cancelTx)
+        .to.emit(cancelTestEventTicket_Instance, "EventCanceled")
+        .withArgs(blockTimestamp);
 
-      const finalDetails = await currentEventTicketInstance.getEventDetails();
+      const finalDetails =
+        await cancelTestEventTicket_Instance.getEventDetails();
       expect(finalDetails.isEventCanceled).to.be.true;
     });
 
     it("Should REVERT if a non-owner tries to cancel the event", async function () {
       await expect(
-        deployedEventTicket.connect(buyer).cancelEvent()
+        cancelTestEventTicket_Instance.connect(buyer).cancelEvent()
       ).to.be.revertedWithCustomError(
-        deployedEventTicket,
+        cancelTestEventTicket_Instance,
         "OwnableUnauthorizedAccount"
       );
     });
 
     it("Should REVERT if the event is already canceled", async function () {
-      // Use a fresh instance or ensure the main one is not in the past
-      let currentEventTicketInstance = deployedEventTicket;
-      if ((await time.latest()) >= validEventDateTimestamp) {
-        const newEventDate = (await time.latest()) + 3600 * 24;
-        const txNew = await eventTicketFactory
-          .connect(creator)
-          .createEvent(
-            "Cancel Test Event Fresh 2",
-            "CTEF2",
-            "Cancellable Show Fresh 2",
-            newEventDate,
-            10,
-            validTicketPriceInUSDC,
-            1,
-            mockUSDCAddress,
-            "ipfs://cancelfresh2"
-          );
-        const receiptNew = await txNew.wait();
-        const eventCreatedFragmentNew =
-          eventTicketFactory.interface.getEvent("EventCreated");
-        const factoryAddrNew = await eventTicketFactory.getAddress();
-        let freshEventAddress;
-        for (const log of receiptNew.logs) {
-          if (
-            log.topics[0] === eventCreatedFragmentNew.topicHash &&
-            log.address === factoryAddrNew
-          ) {
-            freshEventAddress =
-              eventTicketFactory.interface.parseLog(log).args
-                .eventContractAddress;
-            break;
-          }
-        }
-        const EventTicketNew = await ethers.getContractFactory("EventTicket");
-        currentEventTicketInstance = EventTicketNew.attach(freshEventAddress);
-      }
-
-      await currentEventTicketInstance.connect(creator).cancelEvent(); // First cancellation
+      // The beforeEach for this describe block creates a fresh cancelTestEventTicket_Instance.
+      // No need to check time or create another "fresh" instance here.
+      await cancelTestEventTicket_Instance.connect(creator).cancelEvent(); // First cancellation
       await expect(
-        currentEventTicketInstance.connect(creator).cancelEvent() // Second attempt
+        cancelTestEventTicket_Instance.connect(creator).cancelEvent() // Second attempt
       ).to.be.revertedWith("Event is already canceled");
     });
 
     it("Should REVERT if the event has already occurred when trying to cancel", async function () {
-      // Ensure we are using the original deployedEventTicket for this time-sensitive test
-      // and its validEventDateTimestamp
-      await time.increaseTo(validEventDateTimestamp + 1); // Fast forward time past event date
+      // Use the cancelTest_EventDateTimestamp specific to the event instance for this describe block
+      await time.increaseTo(cancelTest_EventDateTimestamp + 1);
       await expect(
-        deployedEventTicket.connect(creator).cancelEvent()
+        cancelTestEventTicket_Instance.connect(creator).cancelEvent()
       ).to.be.revertedWith("Event has already occurred, cannot cancel");
     });
 
