@@ -6,12 +6,16 @@ const ethers = hre.ethers; // Alias for convenience
 // TODO: !! IMPORTANT !!
 // Replace this with the actual address of your deployed EventTicketFactory contract
 const EVENT_TICKET_FACTORY_ADDRESS =
-  "0xC2df92f22325074e77631B8B721ffbB2670f26ef"; // User's provided address
+  "0x5b77166e711cAB78763eB322d099216BC846F423"; // User's provided address
 // ---------------------------------------------------------------------------------
 
+// Address for the USDC token on Base Sepolia
+const USDC_TOKEN_ADDRESS = "0x036CbD53842c5426634e7929541eC2318f3dCF7e";
+const USDC_DECIMALS = 6; // Standard for USDC
+
 const eventTicketFactoryABI = [
-  "function createEvent(string memory _name, string memory _symbol, string memory _eventName, uint256 _date, uint256 _totalTickets, uint256 _ticketPrice, uint256 _ticketLimit) public returns (address)",
-  "event EventCreated(address indexed eventContract, string name, string symbol, string eventName, uint256 date, uint256 totalTickets, uint256 ticketPrice, uint256 ticketLimit)",
+  "function createEvent(string memory _erc721Name, string memory _erc721Symbol, string memory _eventName, uint256 _date, uint256 _totalTickets, uint256 _ticketPriceInUSDC, uint256 _ticketLimit, address _usdcTokenAddress, string memory _eventImageIPFSPath) public",
+  "event EventCreated(address indexed eventContractAddress, address indexed creator, string erc721Name, string eventName, uint256 date, uint256 totalTickets, uint256 ticketPriceInUSDC, address usdcTokenAddress, string eventImageIPFSPath)",
 ];
 
 async function main() {
@@ -46,9 +50,11 @@ async function main() {
 
   // --- Define Event Data (ethers.js v6 adjustments) ---
   const commonSettings = {
-    totalTickets: 1000n, // Use BigInt literal for uint256
-    ticketPrice: ethers.parseEther("0.01"), // Use ethers.parseEther
-    ticketLimit: 5n, // Use BigInt literal for uint256
+    totalTickets: 1000n,
+    ticketPriceInUSDC: ethers.parseUnits("10", USDC_DECIMALS), // e.g., 10 USDC
+    ticketLimit: 5n,
+    // Placeholder IPFS path - replace with actual CIDs for real events
+    defaultEventImageIPFSPath: "ipfs://QmPlaceholderImageHash12345",
   };
 
   const now = Math.floor(Date.now() / 1000);
@@ -60,53 +66,65 @@ async function main() {
       name: "Sublime Ticket",
       symbol: "SUBLT",
       eventName: "Sublime - Long Beach Reunion Tour",
-      date: BigInt(twoWeeksFromNow), // Convert to BigInt for uint256 argument
+      date: BigInt(twoWeeksFromNow),
       description: "American ska punk band from Long Beach, California...",
+      eventImageIPFSPath:
+        "ipfs://bafybeicudpmcnsps4b2lzhwflbgsd22jvmcg5ofubtnwwze54adnzzxmgq/sublime.jpg",
     },
     {
       name: "Led Zeppelin Ticket",
       symbol: "LEDZT",
       eventName: "Led Zeppelin - Celebration Night",
-      date: BigInt(twoWeeksFromNow + oneWeekInSeconds), // Convert to BigInt
+      date: BigInt(twoWeeksFromNow + oneWeekInSeconds),
       description: "English rock band formed in London in 1968...",
+      eventImageIPFSPath:
+        "ipfs://bafybeicudpmcnsps4b2lzhwflbgsd22jvmcg5ofubtnwwze54adnzzxmgq/led zeppelin.jpg",
     },
     {
       name: "Jimi Hendrix Exp Ticket",
       symbol: "JHEXP",
       eventName: "The Jimi Hendrix Experience - Electric Church",
-      date: BigInt(twoWeeksFromNow + 2 * oneWeekInSeconds), // Convert to BigInt
+      date: BigInt(twoWeeksFromNow + 2 * oneWeekInSeconds),
       description: "American guitarist, songwriter and singer...",
+      eventImageIPFSPath:
+        "ipfs://bafybeicudpmcnsps4b2lzhwflbgsd22jvmcg5ofubtnwwze54adnzzxmgq/Jimi+Hendrix+-+Are+You+Experienced+(1967)+front+back+album+cover+download-3640483497.jpg",
     },
   ];
 
   for (const eventData of eventsToCreate) {
     console.log(`\nCreating event: ${eventData.eventName}`);
     console.log(`  Token Name: ${eventData.name}, Symbol: ${eventData.symbol}`);
-    // eventData.date is now a BigInt, .toString() is fine. For new Date(), convert to Number.
     console.log(
       `  Date (Timestamp): ${eventData.date.toString()} (${new Date(
         Number(eventData.date) * 1000
       ).toLocaleString()})`
     );
     console.log(`  Total Tickets: ${commonSettings.totalTickets.toString()}`);
-    // commonSettings.ticketPrice is a BigInt (Wei)
     console.log(
-      `  Ticket Price (Wei): ${commonSettings.ticketPrice.toString()} (${ethers.formatEther(
-        commonSettings.ticketPrice
-      )} ETH)`
-    ); // Use ethers.formatEther
-    console.log(`  Ticket Limit: ${commonSettings.ticketLimit.toString()}`); // <--- CORRECTED
-    // ...
+      `  Ticket Price: ${ethers.formatUnits(
+        commonSettings.ticketPriceInUSDC,
+        USDC_DECIMALS
+      )} USDC (${commonSettings.ticketPriceInUSDC.toString()} atomic units)`
+    );
+    console.log(`  Ticket Limit: ${commonSettings.ticketLimit.toString()}`);
+    console.log(`  USDC Token Address: ${USDC_TOKEN_ADDRESS}`);
+    console.log(
+      `  Event Image IPFS Path: ${
+        eventData.eventImageIPFSPath || commonSettings.defaultEventImageIPFSPath
+      }`
+    );
 
     try {
       const tx = await eventTicketFactory.createEvent(
         eventData.name,
         eventData.symbol,
         eventData.eventName,
-        eventData.date, // Pass BigInt directly
-        commonSettings.totalTickets, // Pass BigInt directly
-        commonSettings.ticketPrice, // Pass BigInt directly
-        commonSettings.ticketLimit // Pass BigInt directly
+        eventData.date,
+        commonSettings.totalTickets,
+        commonSettings.ticketPriceInUSDC,
+        commonSettings.ticketLimit,
+        USDC_TOKEN_ADDRESS,
+        eventData.eventImageIPFSPath || commonSettings.defaultEventImageIPFSPath
       );
 
       console.log(`  Transaction sent: ${tx.hash}`);
@@ -164,13 +182,22 @@ async function main() {
       }
 
       if (foundEventArgs) {
-        const { eventContract, name, date } = foundEventArgs;
-        console.log(`  SUCCESS: Event "${name}" created!`);
-        console.log(`  New EventTicket contract deployed at: ${eventContract}`);
-        // 'date' from event args will likely be a BigInt
+        const {
+          eventContractAddress,
+          creator,
+          erc721Name,
+          eventName: emittedEventName,
+          date: emittedDate,
+          // ... other event args if needed
+        } = foundEventArgs;
+        console.log(`  SUCCESS: Event "${erc721Name}" created!`);
+        console.log(
+          `  New EventTicket contract deployed at: ${eventContractAddress}`
+        );
+        console.log(`  Creator: ${creator}`);
         console.log(
           `  Event Date (from event): ${new Date(
-            Number(date) * 1000
+            Number(emittedDate) * 1000
           ).toLocaleString()}`
         );
       } else {
