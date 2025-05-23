@@ -21,7 +21,7 @@ const eventTicketFactoryABI = [
 async function main() {
   if (
     EVENT_TICKET_FACTORY_ADDRESS ===
-      "YOUR_DEPLOYED_EVENT_TICKET_FACTORY_ADDRESS" ||
+      "0x5b77166e711cAB78763eB322d099216BC846F423" ||
     EVENT_TICKET_FACTORY_ADDRESS === ""
   ) {
     console.error(
@@ -54,7 +54,8 @@ async function main() {
     ticketPriceInUSDC: ethers.parseUnits("10", USDC_DECIMALS), // e.g., 10 USDC
     ticketLimit: 5n,
     // Placeholder IPFS path - replace with actual CIDs for real events
-    defaultEventImageIPFSPath: "ipfs://QmPlaceholderImageHash12345",
+    defaultEventImageIPFSPath:
+      "ipfs://bafybeicudpmcnsps4b2lzhwflbgsd22jvmcg5ofubtnwwze54adnzzxmgq",
   };
 
   const now = Math.floor(Date.now() / 1000);
