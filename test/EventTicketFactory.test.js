@@ -492,7 +492,7 @@ describe("EventTicketFactory Contract Tests", function () {
         ) {
           buyTestEventTicket_Address =
             eventTicketFactory.interface.parseLog(log).args
-              .buyTestEventTicket_Address;
+              .eventContractAddress; // Corrected argument name
           break;
         }
       }
@@ -606,7 +606,7 @@ describe("EventTicketFactory Contract Tests", function () {
         ) {
           singleTicketEventAddress =
             eventTicketFactory.interface.parseLog(log).args
-              .buyTestEventTicket_Address;
+              .eventContractAddress; // Corrected argument name
           break;
         }
       }
@@ -690,16 +690,18 @@ describe("EventTicketFactory Contract Tests", function () {
       const buyerUSDCBalance = await mockUSDC.balanceOf(buyer.address);
       await mockUSDC.connect(buyer).transfer(owner.address, buyerUSDCBalance); // Buyer sends all their USDC to owner
 
-      await expect(
-        buyTestEventTicket_Instance.connect(buyer).buyTicket()
-      ).to.be.revertedWith(
-        // This will likely be caught by the allowance check if balance is 0,
-        // or by transferFrom's internal checks if balance < price.
-        // The exact error message might depend on ERC20 implementation.
-        // For OpenZeppelin's ERC20, it's "ERC20: transfer amount exceeds balance"
-        // which is then caught by the require(!success) in EventTicket.sol
-        "USDC transfer failed. Ensure you have enough USDC and have approved the contract."
-      );
+      const buyerCurrentUSDCBalance = await mockUSDC.balanceOf(buyer.address);
+      await expect(buyTestEventTicket_Instance.connect(buyer).buyTicket())
+        .to.be.revertedWithCustomError(
+          mockUSDC, // The error originates from the ERC20 token contract
+          "ERC20InsufficientBalance"
+        )
+        .withArgs(
+          buyer.address,
+          buyerCurrentUSDCBalance,
+          validTicketPriceInUSDC
+        );
+
       // Restore buyer's balance for subsequent tests if necessary, or ensure tests are independent.
       // For now, we assume tests are independent enough or this is a final test for buyTicket reverts.
       // If not, mint more to buyer:
@@ -1045,9 +1047,11 @@ describe("EventTicketFactory Contract Tests", function () {
     let eventForTransfer;
     let eventForTransferAddress;
     let ticketIdToTransfer;
-    const recipient = owner; // Using owner as the recipient for simplicity
+    let recipient; // Declare here
 
     beforeEach(async function () {
+      recipient = owner; // Initialize here, after owner is set from the top-level beforeEach
+
       // Create a new event for transfer tests
       const eventDate = (await time.latest()) + 3600 * 24 * 4; // 4 days from now
       const tx = await eventTicketFactory
@@ -1307,29 +1311,27 @@ describe("EventTicketFactory Contract Tests", function () {
     });
 
     it("Should REVERT if USDC withdrawal transfer fails (e.g. token issue)", async function () {
-      // This test is hard to trigger with a standard MockUSDC if all other conditions are met (owner, event passed, not canceled, funds > 0).
-      // It implies the `usdcToken.transfer(owner(), usdcBalance)` call returns `false` for reasons
-      // other than insufficient contract balance (which is checked by "No USDC funds to withdraw.").
-      // Such reasons could be:
-      // 1. The `owner()` address is a contract that cannot receive ERC20 tokens. (Not the case here, owner is EOA)
-      // 2. The MockUSDC token itself has a problem (e.g., paused, or `owner()` is blacklisted by the token).
-      // To truly test this, a specialized MockUSDC that can be configured to make transfers fail would be needed.
       await time.increaseTo(eventDateForWithdrawal + 1); // Ensure event has passed
 
-      // We can't easily make a standard OZ ERC20 transfer fail if the sender has balance and recipient is valid.
-      // So, this test case serves as a placeholder for that scenario.
-      // If the `transfer` call were to return `false` unexpectedly, the `require(success, "USDC withdrawal failed.")` would catch it.
-      // For now, we acknowledge this is difficult to isolate with the current MockUSDC.
-      // A more advanced mock could be instrumented:
-      // e.g., `await mockUSDC.setTransferToFail(true);`
-      // Then call withdrawFunds and expect the "USDC withdrawal failed."
-      console.warn(
-        "Test for 'USDC withdrawal failed' might not be fully effective without a special MockUSDC that can make transfers fail on demand while other conditions are met."
+      // Ensure there are funds to attempt to withdraw
+      const contractUSDCBalance = await mockUSDC.balanceOf(
+        eventForWithdrawalAddress
       );
-      // To make it somewhat meaningful, we can check that it doesn't revert if everything is fine.
-      await expect(eventForWithdrawal.connect(creator).withdrawFunds()).to.not
-        .be.reverted;
-      // And then if we *could* make transfer fail, we'd test the revert.
+      expect(contractUSDCBalance).to.be.gt(
+        0,
+        "Contract should have funds before attempting withdrawal failure test"
+      );
+
+      // Configure MockUSDC to make the next transfer fail
+      await mockUSDC.connect(owner).setTransferToFail(true);
+
+      // Attempt to withdraw funds, expecting the specific revert message
+      await expect(
+        eventForWithdrawal.connect(creator).withdrawFunds()
+      ).to.be.revertedWith("USDC withdrawal failed.");
+
+      // Reset the MockUSDC behavior for subsequent tests (though beforeEach usually handles this)
+      await mockUSDC.connect(owner).setTransferToFail(false);
     });
   });
 

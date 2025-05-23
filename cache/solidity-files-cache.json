@@ -766,8 +766,8 @@
       ]
     },
     "/Users/ryanfitzgerald/source/dappUni/NFT-Tickets/contracts/MockUSDC.sol": {
-      "lastModificationDate": 1747980869147,
-      "contentHash": "cd17d5f775ad6f04b48508daa6d4bc07",
+      "lastModificationDate": 1747984201248,
+      "contentHash": "b0c8b2c933d73ba918fa1dd55d19064f",
       "sourceName": "contracts/MockUSDC.sol",
       "solcConfig": {
         "version": "0.8.20",
