@@ -42,8 +42,13 @@ contract EventTicket is ERC721, Ownable {
         uint256 _ticketPriceInUSDC, // Price in USDC (e.g., for $10 USDC with 6 decimals, pass 10000000)
         uint256 _ticketLimit, // Max tickets per buyer
         address _usdcTokenAddress, // Address of the USDC contract
-        string memory _eventImageIPFSPath // IPFS path to the event's image
-    ) ERC721(_erc721Name, _erc721Symbol) Ownable(msg.sender) {
+        string memory _eventImageIPFSPath, // IPFS path to the event's image
+        address initialOwner // The intended owner of this EventTicket contract
+    ) ERC721(_erc721Name, _erc721Symbol) Ownable(initialOwner) {
+        require(
+            initialOwner != address(0),
+            "Initial owner cannot be zero address"
+        );
         require(bytes(_erc721Name).length > 0, "ERC721 name cannot be empty");
         require(
             bytes(_erc721Symbol).length > 0,

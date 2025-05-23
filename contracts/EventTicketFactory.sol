@@ -5,15 +5,13 @@ import "./EventTicket.sol"; // Make sure this path is correct
 
 contract EventTicketFactory {
     // Array to store addresses of deployed EventTicket contracts
-    // Storing the full EventTicket object can be gas-intensive if the array grows large.
-    // Consider storing only addresses if you don't need to call EventTicket functions from the factory itself often.
-    // address[] public eventContracts;
-    EventTicket[] public events; // Kept as is from your original for consistency here
+    // Storing only addresses of deployed EventTicket contracts
+    address[] public eventContracts;
 
     // Event emitted when a new EventTicket contract is deployed
     event EventCreated(
-        address indexed eventContractAddress, // Indexed for easier off-chain filtering
-        address indexed creator, // Indexed for easier off-chain filtering
+        address indexed eventContractAddress,
+        address indexed creator,
         string erc721Name,
         string eventName,
         uint256 date,
@@ -62,12 +60,12 @@ contract EventTicketFactory {
             _ticketPriceInUSDC,
             _ticketLimit,
             _usdcTokenAddress, // Pass the USDC token address
-            _eventImageIPFSPath // Pass the IPFS image path
+            _eventImageIPFSPath, // Pass the IPFS image path
+            msg.sender // Pass the creator as the initial owner
         );
 
-        // Store the deployed contract in the events array
-        events.push(newEventTicket);
-        // If storing only addresses: eventContracts.push(address(newEventTicket));
+        // Store the address of the deployed contract in the eventContracts array
+        eventContracts.push(address(newEventTicket));
 
         // Emit an event for off-chain tracking
         emit EventCreated(
@@ -83,17 +81,12 @@ contract EventTicketFactory {
         );
     }
 
-    // Function to get all deployed EventTicket contract instances
-    function getAllEvents() public view returns (EventTicket[] memory) {
-        return events;
-    }
-
     // Function to get deployed EventTicket contract addresses (more gas-efficient for just addresses)
 
     function getAllEventAddresses() public view returns (address[] memory) {
-        address[] memory addresses = new address[](events.length);
-        for (uint i = 0; i < events.length; i++) {
-            addresses[i] = address(events[i]);
+        address[] memory addresses = new address[](eventContracts.length);
+        for (uint i = 0; i < eventContracts.length; i++) {
+            addresses[i] = eventContracts[i]; // eventContracts already stores addresses
         }
         return addresses;
     }

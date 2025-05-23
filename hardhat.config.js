@@ -5,7 +5,15 @@ require("dotenv").config();
 const { BASE_SEPOLIA_RPC_URL, PRIVATE_KEY, BASESCAN_API_KEY } = process.env;
 
 module.exports = {
-  solidity: "0.8.20",
+  solidity: {
+    version: "0.8.20",
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 200, // Adjust runs for optimization level
+      },
+    },
+  },
   networks: {
     baseSepolia: {
       url: BASE_SEPOLIA_RPC_URL || "https://sepolia.base.org",

@@ -25,15 +25,13 @@ describe("EventTicketFactory Contract Tests", function () {
 
     // Deploy MockUSDC
     MockUSDC = await ethers.getContractFactory("MockUSDC");
-    mockUSDC = await MockUSDC.deploy("Mock USDC", "mUSDC");
+    mockUSDC = await MockUSDC.deploy("Mock USDC", "mUSDC", usdcDecimals);
     await mockUSDC.waitForDeployment();
     mockUSDCAddress = await mockUSDC.getAddress();
 
     // Deploy EventTicketFactory
     EventTicketFactory = await ethers.getContractFactory("EventTicketFactory");
-    eventTicketFactory = await EventTicketFactory.deploy({
-      from: owner.address,
-    });
+    eventTicketFactory = await EventTicketFactory.deploy();
     await eventTicketFactory.waitForDeployment();
 
     // Set a valid future date for events
@@ -69,16 +67,25 @@ describe("EventTicketFactory Contract Tests", function () {
       const receipt = await tx.wait();
 
       // Check for the EventCreated event
-      const eventSignature =
-        "EventCreated(address,address,string,string,uint256,uint256,uint256,address,string)";
-      const eventTopic = ethers.id(eventSignature);
+      const eventCreatedFragment =
+        eventTicketFactory.interface.getEvent("EventCreated");
+      expect(
+        eventCreatedFragment,
+        "EventCreated event fragment not found in contract ABI."
+      ).to.not.be.null;
+      const expectedEventCreatedTopic = eventCreatedFragment.topicHash;
 
       let eventFound = false;
       let createdEventAddress;
+      const factoryAddress = await eventTicketFactory.getAddress();
 
       for (const log of receipt.logs) {
-        if (log.topics[0] === eventTopic) {
+        if (
+          log.topics[0] === expectedEventCreatedTopic &&
+          log.address === factoryAddress
+        ) {
           const decodedEvent = eventTicketFactory.interface.parseLog(log);
+          expect(decodedEvent.name).to.equal("EventCreated"); // Ensure it's the correct event
           expect(decodedEvent.args.creator).to.equal(creator.address);
           expect(decodedEvent.args.erc721Name).to.equal(validERC721Name);
           expect(decodedEvent.args.eventName).to.equal(validEventName);
@@ -100,10 +107,6 @@ describe("EventTicketFactory Contract Tests", function () {
         .true;
 
       // Check that the event is stored in the factory
-      const allEvents = await eventTicketFactory.getAllEvents();
-      expect(allEvents.length).to.equal(1);
-      expect(allEvents[0]).to.equal(createdEventAddress); // In new Hardhat, array stores addresses
-
       const allEventAddresses = await eventTicketFactory.getAllEventAddresses();
       expect(allEventAddresses.length).to.equal(1);
       expect(allEventAddresses[0]).to.equal(createdEventAddress);
@@ -255,12 +258,11 @@ describe("EventTicketFactory Contract Tests", function () {
   });
 
   describe("Getter Functions", function () {
-    it("getAllEvents and getAllEventAddresses should return empty arrays initially", async function () {
-      expect(await eventTicketFactory.getAllEvents()).to.deep.equal([]);
+    it("getAllEventAddresses should return empty arrays initially", async function () {
       expect(await eventTicketFactory.getAllEventAddresses()).to.deep.equal([]);
     });
 
-    it("getAllEvents and getAllEventAddresses should return correct data after multiple event creations", async function () {
+    it("getAllEventAddresses should return correct data after multiple event creations", async function () {
       const tx1 = await eventTicketFactory
         .connect(creator)
         .createEvent(
@@ -276,16 +278,23 @@ describe("EventTicketFactory Contract Tests", function () {
         );
       const receipt1 = await tx1.wait();
       let eventAddr1;
+      const eventCreatedFragment =
+        eventTicketFactory.interface.getEvent("EventCreated");
+      expect(
+        eventCreatedFragment,
+        "EventCreated event fragment not found in contract ABI."
+      ).to.not.be.null;
+      const expectedEventCreatedTopic = eventCreatedFragment.topicHash;
+      const factoryAddress = await eventTicketFactory.getAddress();
+
       for (const log of receipt1.logs) {
         if (
-          log.topics[0] ===
-          ethers.id(
-            "EventCreated(address,address,string,string,uint256,uint256,uint256,address,string)"
-          )
+          log.topics[0] === expectedEventCreatedTopic &&
+          log.address === factoryAddress
         ) {
-          eventAddr1 =
-            eventTicketFactory.interface.parseLog(log).args
-              .eventContractAddress;
+          const decodedEvent = eventTicketFactory.interface.parseLog(log);
+          expect(decodedEvent.name).to.equal("EventCreated");
+          eventAddr1 = decodedEvent.args.eventContractAddress;
           break;
         }
       }
@@ -306,24 +315,18 @@ describe("EventTicketFactory Contract Tests", function () {
         );
       const receipt2 = await tx2.wait();
       let eventAddr2;
+      // eventCreatedFragment, expectedEventCreatedTopic, and factoryAddress are already defined from above in this test scope
       for (const log of receipt2.logs) {
         if (
-          log.topics[0] ===
-          ethers.id(
-            "EventCreated(address,address,string,string,uint256,uint256,uint256,address,string)"
-          )
+          log.topics[0] === expectedEventCreatedTopic &&
+          log.address === factoryAddress
         ) {
-          eventAddr2 =
-            eventTicketFactory.interface.parseLog(log).args
-              .eventContractAddress;
+          const decodedEvent = eventTicketFactory.interface.parseLog(log);
+          expect(decodedEvent.name).to.equal("EventCreated");
+          eventAddr2 = decodedEvent.args.eventContractAddress;
           break;
         }
       }
-
-      const allEvents = await eventTicketFactory.getAllEvents();
-      expect(allEvents.length).to.equal(2);
-      // In new Hardhat, array stores addresses
-      expect(allEvents).to.include.deep.members([eventAddr1, eventAddr2]);
 
       const allEventAddresses = await eventTicketFactory.getAllEventAddresses();
       expect(allEventAddresses.length).to.equal(2);
@@ -354,16 +357,23 @@ describe("EventTicketFactory Contract Tests", function () {
           validEventImageIPFSPath
         );
       const receipt = await tx.wait();
+      const eventCreatedFragment =
+        eventTicketFactory.interface.getEvent("EventCreated");
+      expect(
+        eventCreatedFragment,
+        "EventCreated event fragment not found in contract ABI."
+      ).to.not.be.null;
+      const expectedEventCreatedTopic = eventCreatedFragment.topicHash;
+      const factoryAddress = await eventTicketFactory.getAddress();
+
       for (const log of receipt.logs) {
         if (
-          log.topics[0] ===
-          ethers.id(
-            "EventCreated(address,address,string,string,uint256,uint256,uint256,address,string)"
-          )
+          log.topics[0] === expectedEventCreatedTopic &&
+          log.address === factoryAddress
         ) {
-          eventContractAddress =
-            eventTicketFactory.interface.parseLog(log).args
-              .eventContractAddress;
+          const decodedEvent = eventTicketFactory.interface.parseLog(log);
+          expect(decodedEvent.name).to.equal("EventCreated");
+          eventContractAddress = decodedEvent.args.eventContractAddress;
           break;
         }
       }
