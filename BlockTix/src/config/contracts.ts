@@ -1,6 +1,6 @@
-import EventTicketFactoryABIJson from "../contracts/abis/EventTicketFactory.json";
-import EventTicketABIJson from "../contracts/abis/EventTicket.json";
-import IERC20ABIJson from "../contracts/abis/IERC20.json"; // For the Base Sepolia USDC
+import EventTicketFactoryABIJson from "../abis/EventTicketFactory.json";
+import EventTicketABIJson from "../abis/EventTicket.json";
+import IERC20ABIJson from "../abis/IERC20.json"; // For the Base Sepolia USDC
 
 // Environment variables (ensure these are set in your .env file for Vite)
 const VITE_EVENT_TICKET_FACTORY_ADDRESS =
